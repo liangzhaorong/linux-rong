@@ -163,6 +163,44 @@ caching proxy server.
 ```
 
 ## 2.2 spec 主体（各阶段）
+#### spec 文件阶段
+| 阶段 | 读取的目录 | 写入的目录 | 具体动作 |
+| ---  | ---       | ---       | ---     |
+| %prep| %_sourcedir| %_builddir | 读取位于 %_sourcedir 目录的源代码和 patch 。之后，解压源代码至 %_builddir 的子目录并应用所有 patch。|
+| %build| %_builddir|%_builddir|编译位于 %_builddir 构建目录下的文件。通过执行类似 ./configure && make 的命令实现。|
+| %install|%_builddir|%_buildrootdir|读取位于 %_builddir 构建目录下的文件并将其安装至 %_buildrootdir 目录。这些文件就是用户安装 RPM 后，最终得到的文件。注意一个奇怪的地方: 最终安装目录 不是 构建目录。通过执行类似 make install 的命令实现。|
+|%check|%_builddir|%_builddir|检查软件是否正常运行。通过执行类似 make test 的命令实现。很多软件包都不需要此步。|
+|bin|%_buildrootdir|%_rpmdir|读取位于 %_buildrootdir 最终安装目录下的文件，以便最终在 %_rpmdir 目录下创建 RPM 包。在该目录下，不同架构的 RPM 包会分别保存至不同子目录， noarch 目录保存适用于所有架构的 RPM 包。这些 RPM 文件就是用户最终安装的 RPM 包。|
+|src|%_sourcedir|%_srcrpmdir|创建源码 RPM 包（简称 SRPM，以.src.rpm 作为后缀名），并保存至 %_srcrpmdir 目录。SRPM 包通常用于审核和升级软件包。|
+
+#### 宏路径
+```
+%{_sysconfdir}        /etc
+%{_prefix}            /usr
+%{_exec_prefix}       %{_prefix}
+%{_bindir}            %{_exec_prefix}/bin
+%{_libdir}            %{_exec_prefix}/%{_lib}
+%{_libexecdir}        %{_exec_prefix}/libexec
+%{_sbindir}           %{_exec_prefix}/sbin
+%{_sharedstatedir}    /var/lib
+%{_datarootdir}       %{_prefix}/share
+%{_datadir}           %{_datarootdir}
+%{_includedir}        %{_prefix}/include
+%{_infodir}           /usr/share/info
+%{_mandir}            /usr/share/man
+%{_localstatedir}     /var
+%{_initddir}          %{_sysconfdir}/rc.d/init.d
+%{_var}               /var
+%{_tmppath}           %{_var}/tmp
+%{_usr}               /usr
+%{_usrsrc}            %{_usr}/src
+%{_lib}               lib (lib64 on 64bit multilib systems)
+%{_docdir}            %{_datadir}/doc
+%{buildroot}          %{_buildrootdir}/%{name}-%{version}-%{release}.%{_arch}
+$RPM_BUILD_ROOT       %{buildroot}
+```
+
+
 ### %prep
 该阶段通常执行将源代码包解压到一个临时目录（通常为 BUILD）以及打补丁（如果有的话）等操作。解压时最常见到的一句话是：
 ```
